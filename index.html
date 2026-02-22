@@ -248,14 +248,23 @@
       gap: 6px;
     }
 
+    .history-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .history .history-select {
-      width: 100%;
+      flex: 1;
       text-align: left;
+      min-width: 0;
     }
 
     .history .history-delete {
-      width: auto;
-      justify-self: start;
+      flex-shrink: 0;
+      padding: 6px 10px;
+      font-size: 1rem;
+      line-height: 1;
     }
 
     #recordBtn {
@@ -268,6 +277,7 @@
       .menu-toggle { width: 38px !important; }
       .row { width: 100%; }
       .row > * { flex: 1 1 100%; }
+      .history-row button { width: auto; }
     }
   </style>
 </head>
@@ -527,19 +537,24 @@
         selectBtn.addEventListener("click", () => {
           selectCopyHistoryMessage(entry.text);
         });
-        item.appendChild(selectBtn);
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "btn-danger history-delete";
+        deleteBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>';
+        deleteBtn.title = "Delete";
+        deleteBtn.setAttribute("aria-label", "Delete this copied message");
+        deleteBtn.addEventListener("click", () => {
+          deleteCopyHistoryMessage(index);
+        });
+        const row = document.createElement("div");
+        row.className = "history-row";
+        row.appendChild(selectBtn);
+        row.appendChild(deleteBtn);
+        item.appendChild(row);
         const time = document.createElement("time");
         time.dateTime = entry.createdAt;
         time.textContent = new Date(entry.createdAt).toLocaleString();
         item.appendChild(time);
-        const deleteBtn = document.createElement("button");
-        deleteBtn.type = "button";
-        deleteBtn.className = "btn-danger history-delete";
-        deleteBtn.textContent = "Trash";
-        deleteBtn.addEventListener("click", () => {
-          deleteCopyHistoryMessage(index);
-        });
-        item.appendChild(deleteBtn);
         els.historyList.appendChild(item);
       });
     }
