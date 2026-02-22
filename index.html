@@ -243,6 +243,21 @@
       margin-top: 4px;
     }
 
+    .history li {
+      display: grid;
+      gap: 6px;
+    }
+
+    .history .history-select {
+      width: 100%;
+      text-align: left;
+    }
+
+    .history .history-delete {
+      width: auto;
+      justify-self: start;
+    }
+
     #recordBtn {
       padding: 31px 14px;
     }
@@ -503,13 +518,28 @@
         return;
       }
 
-      copyHistory.forEach((entry) => {
+      copyHistory.forEach((entry, index) => {
         const item = document.createElement("li");
-        item.textContent = entry.text;
+        const selectBtn = document.createElement("button");
+        selectBtn.type = "button";
+        selectBtn.className = "btn-secondary history-select";
+        selectBtn.textContent = entry.text;
+        selectBtn.addEventListener("click", () => {
+          selectCopyHistoryMessage(entry.text);
+        });
+        item.appendChild(selectBtn);
         const time = document.createElement("time");
         time.dateTime = entry.createdAt;
         time.textContent = new Date(entry.createdAt).toLocaleString();
         item.appendChild(time);
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "btn-danger history-delete";
+        deleteBtn.textContent = "Trash";
+        deleteBtn.addEventListener("click", () => {
+          deleteCopyHistoryMessage(index);
+        });
+        item.appendChild(deleteBtn);
         els.historyList.appendChild(item);
       });
     }
@@ -632,7 +662,7 @@
       updateRecordUI();
     }
 
-    async function copyTranscript() {
+    async function copyTranscript(addToHistory = true) {
       const text = els.transcript.value;
       if (!text.trim()) {
         setMessage("Nothing to copy yet.", "warning");
@@ -651,7 +681,23 @@
         setMessage("Copied transcript to clipboard.", "success");
         showCopyToast();
       }
-      addToCopyHistory(text);
+      if (addToHistory) addToCopyHistory(text);
+    }
+
+    async function selectCopyHistoryMessage(text) {
+      els.transcript.value = text;
+      els.transcript.focus();
+      els.transcript.setSelectionRange(text.length, text.length);
+      await copyTranscript(false);
+    }
+
+    function deleteCopyHistoryMessage(index) {
+      if (index < 0 || index >= copyHistory.length) return;
+      if (!window.confirm("Delete this copied message?")) return;
+      copyHistory.splice(index, 1);
+      saveCopyHistory();
+      renderCopyHistory();
+      setMessage("Deleted copied message.", "info");
     }
 
     function clearTranscript() {
