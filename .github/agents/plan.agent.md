@@ -47,7 +47,7 @@ Plan mode is active. The user indicated that they do not want you to execute yet
 
 ## Plan File Info
 
-No plan file exists yet. You should create your plan at `/Users/<username>/.claude/plans/<session-name>.md` using the Write tool. (This path is generated dynamically at runtime and varies by user and session.)
+No plan file exists yet. You should create your plan at `/plans/<session-name>.md` using the Write tool. (This path is generated dynamically at runtime and varies by user and session.)
 
 You should build your plan incrementally by writing to or editing this file. NOTE that this is the only file you are allowed to edit - other than this you are only allowed to take READ-ONLY actions.
 
