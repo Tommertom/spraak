@@ -284,6 +284,7 @@
 
     const STORAGE_KEY = "geminiApiKey";
     const COPY_HISTORY_STORAGE_KEY = "copyHistory";
+    const MAX_COPY_HISTORY_ITEMS = 50;
     const GEMINI_MODEL = "gemini-3-flash-preview";
     const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -482,8 +483,10 @@
     }
 
     function addToCopyHistory(text) {
-      copyHistory.push({ text, createdAt: new Date().toISOString() });
-      copyHistory.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      copyHistory.unshift({ text, createdAt: new Date().toISOString() });
+      if (copyHistory.length > MAX_COPY_HISTORY_ITEMS) {
+        copyHistory = copyHistory.slice(0, MAX_COPY_HISTORY_ITEMS);
+      }
       saveCopyHistory();
       renderCopyHistory();
     }
@@ -606,16 +609,14 @@
 
       try {
         await navigator.clipboard.writeText(text);
-        addToCopyHistory(text);
-        setMessage("Copied transcript to clipboard.", "success");
       } catch {
         els.transcript.focus();
         els.transcript.select();
         document.execCommand("copy");
         els.transcript.setSelectionRange(els.transcript.value.length, els.transcript.value.length);
-        addToCopyHistory(text);
-        setMessage("Copied transcript to clipboard.", "success");
       }
+      addToCopyHistory(text);
+      setMessage("Copied transcript to clipboard.", "success");
     }
 
     function clearTranscript() {
