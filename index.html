@@ -692,7 +692,7 @@
     }
 
     function deleteCopyHistoryMessage(index) {
-      if (!copyHistory[index]) return;
+      if (index < 0 || index >= copyHistory.length) return;
       if (!window.confirm("Delete this copied message?")) return;
       copyHistory.splice(index, 1);
       saveCopyHistory();
