@@ -820,6 +820,7 @@
 
       async function reloadApp() {
         closeMenu();
+        if (!window.confirm("Reload the app and clear all caches? Your API key and history will be kept.")) return;
         try {
           if ("caches" in window) {
             const keys = await caches.keys();
