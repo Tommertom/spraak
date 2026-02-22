@@ -1,4 +1,4 @@
-const CACHE_NAME = "spraak-v1";
+const CACHE_NAME = "spraak-v2";
 const APP_SHELL = [
   "/",
   "/index.html",

@@ -216,6 +216,33 @@
       box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
     }
 
+    .history {
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 12px;
+      background: rgba(2, 6, 23, 0.5);
+      padding: 12px;
+    }
+
+    .history h2 {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .history ul {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .history time {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
     #recordBtn {
       padding: 31px 14px;
     }
@@ -260,6 +287,10 @@
         <button id="clearBtn" class="btn-secondary">Clear Text</button>
       </div>
       <textarea id="transcript" placeholder="Transcribed text will appear here..."></textarea>
+      <section class="history">
+        <h2>Recently copied messages</h2>
+        <ul id="historyList"></ul>
+      </section>
     </section>
   </main>
 
@@ -275,6 +306,8 @@
     }
 
     const STORAGE_KEY = "geminiApiKey";
+    const COPY_HISTORY_STORAGE_KEY = "copyHistory";
+    const MAX_COPY_HISTORY_ITEMS = 50;
     const GEMINI_MODEL = "gemini-3-flash-preview";
     const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -291,6 +324,7 @@
       recordDot: document.getElementById("recordDot"),
       recordState: document.getElementById("recordState"),
       copyToast: document.getElementById("copyToast")
+      historyList: document.getElementById("historyList")
     };
 
     let apiKey = localStorage.getItem(STORAGE_KEY) || "";
@@ -299,6 +333,7 @@
     let isRecording = false;
     let recordedChunks = [];
     let copyToastTimer = null;
+    let copyHistory = [];
 
     function setMessage(text, type = "info") {
       const colorMap = {
@@ -442,6 +477,49 @@
       copyToastTimer = setTimeout(() => {
         els.copyToast.classList.remove("show");
       }, 1200);
+    function loadCopyHistory() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(COPY_HISTORY_STORAGE_KEY) || "[]");
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+          .filter((item) => item && typeof item.text === "string" && typeof item.createdAt === "string")
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      } catch {
+        return [];
+      }
+    }
+
+    function saveCopyHistory() {
+      localStorage.setItem(COPY_HISTORY_STORAGE_KEY, JSON.stringify(copyHistory));
+    }
+
+    function renderCopyHistory() {
+      els.historyList.textContent = "";
+      if (!copyHistory.length) {
+        const item = document.createElement("li");
+        item.textContent = "No copied messages yet.";
+        els.historyList.appendChild(item);
+        return;
+      }
+
+      copyHistory.forEach((entry) => {
+        const item = document.createElement("li");
+        item.textContent = entry.text;
+        const time = document.createElement("time");
+        time.dateTime = entry.createdAt;
+        time.textContent = new Date(entry.createdAt).toLocaleString();
+        item.appendChild(time);
+        els.historyList.appendChild(item);
+      });
+    }
+
+    function addToCopyHistory(text) {
+      copyHistory.unshift({ text, createdAt: new Date().toISOString() });
+      if (copyHistory.length > MAX_COPY_HISTORY_ITEMS) {
+        copyHistory = copyHistory.slice(0, MAX_COPY_HISTORY_ITEMS);
+      }
+      saveCopyHistory();
+      renderCopyHistory();
     }
 
     async function transcribeChunk(audioBlob) {
@@ -572,6 +650,8 @@
         setMessage("Copied transcript to clipboard.", "success");
         showCopyToast();
       }
+      addToCopyHistory(text);
+      setMessage("Copied transcript to clipboard.", "success");
     }
 
     function clearTranscript() {
@@ -617,6 +697,8 @@
     els.menuPopup.addEventListener("click", (event) => event.stopPropagation());
 
     updateRecordUI();
+    copyHistory = loadCopyHistory();
+    renderCopyHistory();
     if (!apiKey) {
       setMessage("Please set your Gemini API key to start transcribing.", "warning");
       promptForApiKey();
