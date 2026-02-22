@@ -10,7 +10,6 @@
 - 🤖 **AI transcription** — sends recordings to Google Gemini for accurate speech-to-text conversion
 - 📋 **One-click copy** — copies the transcript to your clipboard instantly
 - 🔒 **Private by default** — your Gemini API key is stored only in your browser's `localStorage`
-- 📱 **Progressive Web App (PWA)** — installable on desktop and mobile, works offline after first load
 - 🚫 **No build step** — a single `index.html` file; open it and go
 
 ## Prerequisites
@@ -44,8 +43,6 @@ Click **Stop Recording**. Spraak converts the captured audio to WAV format and s
 3. The WAV data is Base64-encoded and sent as an inline payload to the Gemini `generateContent` endpoint.
 4. Gemini returns a plain-text transcript, which is appended to the text area.
 
-The service worker (`sw.js`) caches the app shell so Spraak loads instantly and works without a network connection after the first visit.
-
 ## Running Locally
 
 No build tools are required. Open `index.html` directly in a browser:
@@ -58,7 +55,7 @@ python3 -m http.server 8080
 
 ## Deployment
 
-Because browsers require a secure context to access the microphone, Spraak **must be served over HTTPS**. Deploy the files (`index.html`, `sw.js`, `manifest.webmanifest`, and the `icons/` folder) to any static web host that provides HTTPS — for example GitHub Pages, Netlify, Vercel, Cloudflare Pages, or your own server with a TLS certificate.
+Because browsers require a secure context to access the microphone, Spraak **must be served over HTTPS**. Deploy the files (`index.html`, `manifest.webmanifest`, and the `icons/` folder) to any static web host that provides HTTPS — for example GitHub Pages, Netlify, Vercel, Cloudflare Pages, or your own server with a TLS certificate.
 
 > ⚠️ Serving over plain `http://` (except `localhost`) will cause the browser to block microphone access.
 
@@ -68,7 +65,6 @@ Because browsers require a secure context to access the microphone, Spraak **mus
 |---|---|
 | UI | Vanilla HTML / CSS / JavaScript |
 | AI | Google Gemini API (`gemini-3-flash-preview`) |
-| Offline | Service Worker + Cache API |
 | PWA | Web App Manifest |
 | CI/CD | GitHub Actions + Firebase Hosting |
 

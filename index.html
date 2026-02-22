@@ -358,14 +358,6 @@
     <script>
       "use strict";
 
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("./sw.js").catch((err) => {
-            console.error("Service worker registration failed:", err);
-          });
-        });
-      }
-
       const STORAGE_KEY = "geminiApiKey";
       const COPY_HISTORY_STORAGE_KEY = "copyHistory";
       const MAX_COPY_HISTORY_ITEMS = 50;
@@ -825,10 +817,6 @@
           if ("caches" in window) {
             const keys = await caches.keys();
             await Promise.all(keys.map((key) => caches.delete(key)));
-          }
-          if ("serviceWorker" in navigator) {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            await Promise.all(registrations.map((reg) => reg.unregister()));
           }
         } catch (err) {
           console.error("Error clearing caches before reload:", err);
