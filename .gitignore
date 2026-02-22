@@ -29,3 +29,10 @@ pnpm-debug.log*
 Thumbs.db
 .idea/
 .vscode/
+
+
+.firebaserc
+
+firebase.json
+
+.firebase
