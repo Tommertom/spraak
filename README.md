@@ -2,6 +2,8 @@
 
 **Spraak** is a lightweight, browser-based voice recorder and transcription app powered by Google's Gemini AI. Record audio directly from your microphone, and Spraak will transcribe your speech to text in seconds — no server required.
 
+🌐 **Live demo:** [https://gpx-go-78518.web.app/](https://gpx-go-78518.web.app/)
+
 ## Features
 
 - 🎙️ **In-browser recording** — captures audio from your microphone using the MediaRecorder API
@@ -56,17 +58,9 @@ python3 -m http.server 8080
 
 ## Deployment
 
-The repository includes a GitHub Actions workflow that deploys to **Firebase Hosting** automatically on every push to `main`.
+Because browsers require a secure context to access the microphone, Spraak **must be served over HTTPS**. Deploy the files (`index.html`, `sw.js`, `manifest.webmanifest`, and the `icons/` folder) to any static web host that provides HTTPS — for example GitHub Pages, Netlify, Vercel, Cloudflare Pages, or your own server with a TLS certificate.
 
-To deploy manually:
-
-```bash
-npm install -g firebase-tools
-firebase login
-firebase deploy --only hosting
-```
-
-The workflow requires a `FIREBASE_SERVICE_ACCOUNT` secret configured in the repository settings.
+> ⚠️ Serving over plain `http://` (except `localhost`) will cause the browser to block microphone access.
 
 ## Tech Stack
 
