@@ -832,7 +832,7 @@
         } catch (err) {
           console.error("Error clearing caches before reload:", err);
         }
-        location.reload();
+        window.location.href = window.location.href;
       }
 
       function closeMenu() {
