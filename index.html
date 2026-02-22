@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Spraak</title>
+  <style>
+    :root {
+      --bg1: #0f172a;
+      --bg2: #1e293b;
+      --panel: rgba(15, 23, 42, 0.75);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --good: #10b981;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --accent: #38bdf8;
+      --accent2: #a78bfa;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg1);
+    }
+
+    .app {
+      width: 100%;
+      min-height: 100vh;
+      border: 0;
+      border-radius: 0;
+      background: var(--panel);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .header {
+      padding: 22px;
+      padding-right: 74px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+      letter-spacing: 0.2px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .content {
+      padding: 18px 22px 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .status {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-top: 6px;
+      min-height: 1.2em;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(30, 41, 59, 0.65);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.7);
+    }
+
+    .dot.live {
+      background: var(--good);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: white;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      cursor: pointer;
+      transition: transform 0.06s ease, filter 0.15s ease;
+    }
+
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: rgba(51, 65, 85, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+    }
+
+    .btn-danger {
+      background: rgba(127, 29, 29, 0.9);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+    }
+
+    .menu-toggle {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border-radius: 999px;
+      font-size: 1rem;
+      display: grid;
+      place-items: center;
+      z-index: 3;
+    }
+
+    .menu-popup {
+      position: absolute;
+      top: 58px;
+      right: 14px;
+      width: min(320px, calc(100% - 28px));
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 12px;
+      background: rgba(2, 6, 23, 0.95);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+      padding: 12px;
+      z-index: 4;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: min(56vh, 460px);
+      resize: vertical;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 12px;
+      background: rgba(2, 6, 23, 0.7);
+      color: var(--text);
+      padding: 14px;
+      font: 500 0.98rem/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: rgba(56, 189, 248, 0.7);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+    }
+
+    @media (max-width: 600px) {
+      .header, .content { padding: 14px; }
+      button { width: 100%; }
+      .menu-toggle { width: 38px !important; }
+      .row { width: 100%; }
+      .row > * { flex: 1 1 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <button id="menuBtn" class="menu-toggle btn-secondary" aria-label="Open API key menu" title="API key menu">⚙</button>
+    <div id="menuPopup" class="menu-popup" hidden>
+      <div class="row">
+        <button id="setKeyBtn" class="btn-secondary">Set API Key</button>
+        <button id="clearKeyBtn" class="btn-danger">Clear API Key</button>
+      </div>
+    </div>
+
+    <section class="header">
+      <div>
+        <div class="brand">
+          <img src="icons/icon-192.png" alt="Spraak logo" class="brand-logo">
+          <h1>Spraak</h1>
+        </div>
+        <div class="status" id="message"></div>
+      </div>
+      <div class="row">
+        <span class="pill"><span class="dot" id="recordDot"></span><span id="recordState">Idle</span></span>
+      </div>
+    </section>
+
+    <section class="content">
+      <div class="row">
+        <button id="recordBtn">Start Recording</button>
+        <button id="copyBtn" class="btn-secondary">Copy</button>
+        <button id="clearBtn" class="btn-secondary">Clear Text</button>
+      </div>
+      <textarea id="transcript" placeholder="Transcribed text will appear here..."></textarea>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch((err) => {
+          console.error("Service worker registration failed:", err);
+        });
+      });
+    }
+
+    const STORAGE_KEY = "geminiApiKey";
+    const GEMINI_MODEL = "gemini-3-flash-preview";
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+    const els = {
+      message: document.getElementById("message"),
+      recordBtn: document.getElementById("recordBtn"),
+      copyBtn: document.getElementById("copyBtn"),
+      clearBtn: document.getElementById("clearBtn"),
+      setKeyBtn: document.getElementById("setKeyBtn"),
+      clearKeyBtn: document.getElementById("clearKeyBtn"),
+      transcript: document.getElementById("transcript"),
+      menuBtn: document.getElementById("menuBtn"),
+      menuPopup: document.getElementById("menuPopup"),
+      recordDot: document.getElementById("recordDot"),
+      recordState: document.getElementById("recordState")
+    };
+
+    let apiKey = localStorage.getItem(STORAGE_KEY) || "";
+    let mediaRecorder = null;
+    let mediaStream = null;
+    let isRecording = false;
+    let recordedChunks = [];
+
+    function setMessage(text, type = "info") {
+      const colorMap = {
+        info: "var(--muted)",
+        success: "var(--good)",
+        warning: "var(--warn)",
+        error: "var(--bad)"
+      };
+      els.message.style.color = colorMap[type] || colorMap.info;
+      els.message.textContent = text;
+    }
+
+    function updateRecordUI() {
+      els.recordBtn.textContent = isRecording ? "Stop Recording" : "Start Recording";
+      els.recordState.textContent = isRecording ? "Recording" : "Idle";
+      els.recordDot.classList.toggle("live", isRecording);
+    }
+
+    function promptForApiKey() {
+      const entered = window.prompt("Enter your Gemini API key:", apiKey || "");
+      if (entered && entered.trim()) {
+        apiKey = entered.trim();
+        localStorage.setItem(STORAGE_KEY, apiKey);
+        setMessage("API key saved locally in your browser.", "success");
+        return true;
+      }
+      setMessage("A Gemini API key is required.", "warning");
+      return false;
+    }
+
+    function ensureApiKey() {
+      if (apiKey) return true;
+      return promptForApiKey();
+    }
+
+    function normalizeMimeType(mimeType) {
+      return String(mimeType || "").split(";")[0].trim().toLowerCase();
+    }
+
+    function writeAsciiString(view, offset, text) {
+      for (let i = 0; i < text.length; i += 1) {
+        view.setUint8(offset + i, text.charCodeAt(i));
+      }
+    }
+
+    function audioBufferToWavBlob(audioBuffer) {
+      const inputChannelCount = audioBuffer.numberOfChannels || 1;
+      const sampleRate = audioBuffer.sampleRate || 16000;
+      const frameCount = audioBuffer.length;
+      const monoData = new Float32Array(frameCount);
+
+      for (let channel = 0; channel < inputChannelCount; channel += 1) {
+        const channelData = audioBuffer.getChannelData(channel);
+        for (let i = 0; i < frameCount; i += 1) {
+          monoData[i] += channelData[i] / inputChannelCount;
+        }
+      }
+
+      const bytesPerSample = 2;
+      const blockAlign = bytesPerSample;
+      const byteRate = sampleRate * blockAlign;
+      const dataSize = frameCount * bytesPerSample;
+      const wavBuffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(wavBuffer);
+
+      writeAsciiString(view, 0, "RIFF");
+      view.setUint32(4, 36 + dataSize, true);
+      writeAsciiString(view, 8, "WAVE");
+      writeAsciiString(view, 12, "fmt ");
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, byteRate, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeAsciiString(view, 36, "data");
+      view.setUint32(40, dataSize, true);
+
+      let offset = 44;
+      for (let i = 0; i < frameCount; i += 1) {
+        const sample = Math.max(-1, Math.min(1, monoData[i]));
+        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+        offset += 2;
+      }
+
+      return new Blob([wavBuffer], { type: "audio/wav" });
+    }
+
+    async function convertToWavBlob(blob) {
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextCtor) {
+        throw new Error("Browser audio conversion is not supported.");
+      }
+      const audioBuffer = await blob.arrayBuffer();
+      const audioContext = new AudioContextCtor();
+      try {
+        const decoded = await audioContext.decodeAudioData(audioBuffer.slice(0));
+        return audioBufferToWavBlob(decoded);
+      } finally {
+        await audioContext.close();
+      }
+    }
+
+    async function prepareGeminiAudioBlob(blob) {
+      const mimeType = normalizeMimeType(blob.type);
+      if (mimeType === "audio/wav") return blob;
+      return convertToWavBlob(blob);
+    }
+
+    async function blobToBase64(blob) {
+      const buffer = await blob.arrayBuffer();
+      let binary = "";
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.length; i += 1) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    function extractText(data) {
+      const parts = data?.candidates?.[0]?.content?.parts;
+      if (!Array.isArray(parts)) return "";
+      return parts.map((part) => part?.text || "").join("").trim();
+    }
+
+    function appendTranscript(text) {
+      if (!text) return;
+      const prefix = els.transcript.value.trim() ? "\n" : "";
+      els.transcript.value += `${prefix}${text}`;
+      els.transcript.scrollTop = els.transcript.scrollHeight;
+    }
+
+    function clearRecordedAudioBuffer() {
+      recordedChunks = [];
+    }
+
+    async function transcribeChunk(audioBlob) {
+      if (!apiKey) throw new Error("Missing API key.");
+
+      const preparedAudioBlob = await prepareGeminiAudioBlob(audioBlob);
+      const base64Audio = await blobToBase64(preparedAudioBlob);
+      const payload = {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: "Transcribe this full recording. Return only spoken words as plain text. If there is no clear speech, return an empty string." },
+              { inlineData: { mimeType: preparedAudioBlob.type || "audio/wav", data: base64Audio } }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0
+        }
+      };
+
+      const response = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(apiKey)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Gemini request failed (${response.status}): ${errText.slice(0, 180)}`);
+      }
+
+      const data = await response.json();
+      return extractText(data);
+    }
+
+    async function startRecording() {
+      if (!ensureApiKey()) return;
+
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+        setMessage("This browser does not support microphone recording.", "error");
+        return;
+      }
+
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(mediaStream);
+        recordedChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onerror = () => {
+          setMessage("Microphone recorder error occurred.", "error");
+        };
+
+        mediaRecorder.onstop = async () => {
+          if (mediaStream) {
+            mediaStream.getTracks().forEach((track) => track.stop());
+            mediaStream = null;
+          }
+          const chunks = recordedChunks;
+          clearRecordedAudioBuffer();
+          const mimeType = mediaRecorder?.mimeType || "audio/webm";
+          mediaRecorder = null;
+
+          if (!chunks.length) {
+            setMessage("Recording stopped with no audio captured.", "warning");
+            return;
+          }
+
+          setMessage("Transcribing recording...", "info");
+          try {
+            const completeRecording = new Blob(chunks, { type: mimeType });
+            const transcriptText = await transcribeChunk(completeRecording);
+            if (transcriptText) {
+              appendTranscript(transcriptText);
+              setMessage("Transcription completed.", "success");
+            } else {
+              setMessage("No speech detected in recording.", "warning");
+            }
+          } catch (err) {
+            console.error(err);
+            setMessage(err.message || "Transcription failed.", "error");
+          }
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        updateRecordUI();
+        setMessage("Recording...", "success");
+      } catch (err) {
+        console.error(err);
+        setMessage("Could not access microphone. Please allow permission.", "error");
+      }
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      } else {
+        mediaRecorder = null;
+      }
+      isRecording = false;
+      updateRecordUI();
+    }
+
+    async function copyTranscript() {
+      const text = els.transcript.value;
+      if (!text.trim()) {
+        setMessage("Nothing to copy yet.", "warning");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(text);
+        setMessage("Copied transcript to clipboard.", "success");
+      } catch {
+        els.transcript.focus();
+        els.transcript.select();
+        document.execCommand("copy");
+        els.transcript.setSelectionRange(els.transcript.value.length, els.transcript.value.length);
+        setMessage("Copied transcript to clipboard.", "success");
+      }
+    }
+
+    function clearTranscript() {
+      els.transcript.value = "";
+      setMessage("Transcript cleared.", "info");
+    }
+
+    function clearApiKey() {
+      apiKey = "";
+      localStorage.removeItem(STORAGE_KEY);
+      setMessage("API key cleared.", "warning");
+      if (isRecording) stopRecording();
+    }
+
+    function closeMenu() {
+      els.menuPopup.hidden = true;
+    }
+
+    els.recordBtn.addEventListener("click", () => {
+      if (isRecording) stopRecording();
+      else startRecording();
+    });
+    els.copyBtn.addEventListener("click", copyTranscript);
+    els.clearBtn.addEventListener("click", clearTranscript);
+    els.setKeyBtn.addEventListener("click", () => {
+      promptForApiKey();
+      closeMenu();
+    });
+    els.clearKeyBtn.addEventListener("click", () => {
+      clearApiKey();
+      closeMenu();
+    });
+    els.menuBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      els.menuPopup.hidden = !els.menuPopup.hidden;
+    });
+    document.addEventListener("click", (event) => {
+      if (els.menuPopup.hidden) return;
+      if (!els.menuPopup.contains(event.target) && event.target !== els.menuBtn) {
+        closeMenu();
+      }
+    });
+    els.menuPopup.addEventListener("click", (event) => event.stopPropagation());
+
+    updateRecordUI();
+    if (!apiKey) {
+      setMessage("Please set your Gemini API key to start transcribing.", "warning");
+      promptForApiKey();
+    } else {
+      setMessage("Ready. Click Start Recording.", "info");
+    }
+  </script>
+</body>
+</html>
