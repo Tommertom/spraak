@@ -176,6 +176,28 @@
       z-index: 4;
     }
 
+    .toast {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translate(-50%, -16px);
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      background: rgba(2, 6, 23, 0.95);
+      color: var(--text);
+      font-size: 0.85rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 20;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
     textarea {
       width: 100%;
       min-height: min(56vh, 460px);
@@ -208,6 +230,7 @@
   </style>
 </head>
 <body>
+  <div id="copyToast" class="toast" role="status" aria-live="polite">copied</div>
   <main class="app">
     <button id="menuBtn" class="menu-toggle btn-secondary" aria-label="Open API key menu" title="API key menu">⚙</button>
     <div id="menuPopup" class="menu-popup" hidden>
@@ -266,7 +289,8 @@
       menuBtn: document.getElementById("menuBtn"),
       menuPopup: document.getElementById("menuPopup"),
       recordDot: document.getElementById("recordDot"),
-      recordState: document.getElementById("recordState")
+      recordState: document.getElementById("recordState"),
+      copyToast: document.getElementById("copyToast")
     };
 
     let apiKey = localStorage.getItem(STORAGE_KEY) || "";
@@ -274,6 +298,7 @@
     let mediaStream = null;
     let isRecording = false;
     let recordedChunks = [];
+    let copyToastTimer = null;
 
     function setMessage(text, type = "info") {
       const colorMap = {
@@ -411,6 +436,14 @@
       recordedChunks = [];
     }
 
+    function showCopyToast() {
+      if (copyToastTimer) clearTimeout(copyToastTimer);
+      els.copyToast.classList.add("show");
+      copyToastTimer = setTimeout(() => {
+        els.copyToast.classList.remove("show");
+      }, 1200);
+    }
+
     async function transcribeChunk(audioBlob) {
       if (!apiKey) throw new Error("Missing API key.");
 
@@ -530,12 +563,14 @@
       try {
         await navigator.clipboard.writeText(text);
         setMessage("Copied transcript to clipboard.", "success");
+        showCopyToast();
       } catch {
         els.transcript.focus();
         els.transcript.select();
         document.execCommand("copy");
         els.transcript.setSelectionRange(els.transcript.value.length, els.transcript.value.length);
         setMessage("Copied transcript to clipboard.", "success");
+        showCopyToast();
       }
     }
 
