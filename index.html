@@ -477,6 +477,7 @@
       copyToastTimer = setTimeout(() => {
         els.copyToast.classList.remove("show");
       }, 1200);
+    }
     function loadCopyHistory() {
       try {
         const parsed = JSON.parse(localStorage.getItem(COPY_HISTORY_STORAGE_KEY) || "[]");
