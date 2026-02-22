@@ -319,6 +319,9 @@
           <button id="setKeyBtn" class="btn-secondary">Set API Key</button>
           <button id="clearKeyBtn" class="btn-danger">Clear API Key</button>
         </div>
+        <div class="row">
+          <button id="reloadAppBtn" class="btn-secondary">Reload App</button>
+        </div>
       </div>
 
       <section class="header">
@@ -376,6 +379,7 @@
         clearBtn: document.getElementById("clearBtn"),
         setKeyBtn: document.getElementById("setKeyBtn"),
         clearKeyBtn: document.getElementById("clearKeyBtn"),
+        reloadAppBtn: document.getElementById("reloadAppBtn"),
         transcript: document.getElementById("transcript"),
         menuBtn: document.getElementById("menuBtn"),
         menuPopup: document.getElementById("menuPopup"),
@@ -814,6 +818,23 @@
         if (isRecording) stopRecording();
       }
 
+      async function reloadApp() {
+        closeMenu();
+        try {
+          if ("caches" in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((key) => caches.delete(key)));
+          }
+          if ("serviceWorker" in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map((reg) => reg.unregister()));
+          }
+        } catch (err) {
+          console.error("Error clearing caches before reload:", err);
+        }
+        location.reload();
+      }
+
       function closeMenu() {
         els.menuPopup.hidden = true;
       }
@@ -832,6 +853,7 @@
         clearApiKey();
         closeMenu();
       });
+      els.reloadAppBtn.addEventListener("click", () => reloadApp());
       els.menuBtn.addEventListener("click", (event) => {
         event.stopPropagation();
         els.menuPopup.hidden = !els.menuPopup.hidden;
