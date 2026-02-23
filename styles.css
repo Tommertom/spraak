@@ -160,6 +160,10 @@
         gap: 8px;
       }
 
+      .menu-popup[hidden] {
+        display: none;
+      }
+
       .menu-popup button {
         padding: 14px 18px;
       }
