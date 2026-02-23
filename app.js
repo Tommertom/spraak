@@ -49,7 +49,7 @@
       function promptForApiKey() {
         const entered = window.prompt(
           "Enter your Gemini API key:",
-          apiKey || "",
+          "",
         );
         if (entered && entered.trim()) {
           apiKey = entered.trim();
