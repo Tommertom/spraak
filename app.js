@@ -1,6 +1,7 @@
       "use strict";
 
       const STORAGE_KEY = "geminiApiKey";
+      const THEME_STORAGE_KEY = "themePreference";
       const COPY_HISTORY_STORAGE_KEY = "copyHistory";
       const MAX_COPY_HISTORY_ITEMS = 50;
       const GEMINI_MODEL = "gemini-3-flash-preview";
@@ -16,6 +17,7 @@
         reloadAppBtn: document.getElementById("reloadAppBtn"),
         transcript: document.getElementById("transcript"),
         menuBtn: document.getElementById("menuBtn"),
+        themeBtn: document.getElementById("themeBtn"),
         menuPopup: document.getElementById("menuPopup"),
         copyToast: document.getElementById("copyToast"),
         historyList: document.getElementById("historyList"),
@@ -28,6 +30,26 @@
       let recordedChunks = [];
       let copyToastTimer = null;
       let copyHistory = [];
+      let theme = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
+
+      function applyTheme(nextTheme) {
+        theme = nextTheme === "light" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", theme);
+        const lightMode = theme === "light";
+        els.themeBtn.textContent = lightMode ? "🌙" : "☀";
+        els.themeBtn.setAttribute(
+          "aria-label",
+          lightMode ? "Switch to dark mode" : "Switch to light mode",
+        );
+        els.themeBtn.title = lightMode
+          ? "Switch to dark mode"
+          : "Switch to light mode";
+      }
+
+      function toggleTheme() {
+        applyTheme(theme === "dark" ? "light" : "dark");
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+      }
 
       function setMessage(text, type = "info") {
         const colorMap = {
@@ -489,6 +511,7 @@
         event.stopPropagation();
         els.menuPopup.hidden = !els.menuPopup.hidden;
       });
+      els.themeBtn.addEventListener("click", toggleTheme);
       document.addEventListener("click", (event) => {
         if (els.menuPopup.hidden) return;
         if (
@@ -503,6 +526,7 @@
       );
 
       updateRecordUI();
+      applyTheme(theme);
       copyHistory = loadCopyHistory();
       renderCopyHistory();
       if (!apiKey) {
