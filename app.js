@@ -36,7 +36,7 @@
         theme = nextTheme === "light" ? "light" : "dark";
         document.documentElement.setAttribute("data-theme", theme);
         const lightMode = theme === "light";
-        els.themeBtn.textContent = lightMode ? "🌙" : "☀";
+        els.themeBtn.textContent = lightMode ? "☾" : "☀";
         els.themeBtn.setAttribute(
           "aria-label",
           lightMode ? "Switch to dark mode" : "Switch to light mode",
