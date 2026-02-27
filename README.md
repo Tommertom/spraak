@@ -9,6 +9,7 @@
 - 🎙️ **In-browser recording** — captures audio from your microphone using the MediaRecorder API
 - 🤖 **AI transcription** — sends recordings to Google Gemini for accurate speech-to-text conversion
 - 📋 **One-click copy** — copies the transcript to your clipboard instantly
+- 🌓 **Dark/light mode toggle** — switch themes to match your preference
 - 🔒 **Private by default** — your Gemini API key is stored only in your browser's `localStorage`
 - 🚫 **No build step** — a single `index.html` file; open it and go
 
