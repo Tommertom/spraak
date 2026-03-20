@@ -490,6 +490,7 @@
       }
 
       function clearTranscript() {
+        if (!window.confirm("Are you sure you want to clear the text?")) return;
         els.transcript.value = "";
         setMessage("Transcript cleared.", "info");
       }
