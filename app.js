@@ -3,6 +3,7 @@
       const STORAGE_KEY = "geminiApiKey";
       const THEME_STORAGE_KEY = "themePreference";
       const COPY_HISTORY_STORAGE_KEY = "copyHistory";
+      const FILLER_FILTER_STORAGE_KEY = "fillerFilter";
       const MAX_COPY_HISTORY_ITEMS = 50;
       const GEMINI_MODEL = "gemini-3-flash-preview";
       const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -18,6 +19,7 @@
         transcript: document.getElementById("transcript"),
         menuBtn: document.getElementById("menuBtn"),
         themeBtn: document.getElementById("themeBtn"),
+        filterBtn: document.getElementById("filterBtn"),
         menuPopup: document.getElementById("menuPopup"),
         copyToast: document.getElementById("copyToast"),
         historyList: document.getElementById("historyList"),
@@ -31,6 +33,7 @@
       let copyToastTimer = null;
       let copyHistory = [];
       let theme = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
+      let fillerFilter = localStorage.getItem(FILLER_FILTER_STORAGE_KEY) === "true";
 
       function applyTheme(nextTheme) {
         theme = nextTheme === "light" ? "light" : "dark";
@@ -49,6 +52,27 @@
       function toggleTheme() {
         applyTheme(theme === "dark" ? "light" : "dark");
         localStorage.setItem(THEME_STORAGE_KEY, theme);
+      }
+
+      function applyFillerFilter(enabled) {
+        fillerFilter = !!enabled;
+        if (fillerFilter) {
+          els.filterBtn.classList.remove("btn-secondary");
+        } else {
+          els.filterBtn.classList.add("btn-secondary");
+        }
+        els.filterBtn.setAttribute(
+          "aria-label",
+          fillerFilter ? "Disable filler word filter" : "Enable filler word filter",
+        );
+        els.filterBtn.title = fillerFilter
+          ? "Disable filler word filter"
+          : "Enable filler word filter";
+      }
+
+      function toggleFillerFilter() {
+        applyFillerFilter(!fillerFilter);
+        localStorage.setItem(FILLER_FILTER_STORAGE_KEY, fillerFilter);
       }
 
       function setMessage(text, type = "info") {
@@ -291,13 +315,16 @@
 
         const preparedAudioBlob = await prepareGeminiAudioBlob(audioBlob);
         const base64Audio = await blobToBase64(preparedAudioBlob);
+        const transcribePrompt = fillerFilter
+          ? "Transcribe this full recording. Return only meaningful spoken words as plain text. Remove filler sounds and words such as 'um', 'uh', 'ah', 'hmm', 'er', and other non-meaningful sounds or noises. If there is no clear speech, return an empty string."
+          : "Transcribe this full recording. Return only spoken words as plain text. If there is no clear speech, return an empty string.";
         const payload = {
           contents: [
             {
               role: "user",
               parts: [
                 {
-                  text: "Transcribe this full recording. Return only spoken words as plain text. If there is no clear speech, return an empty string.",
+                  text: transcribePrompt,
                 },
                 {
                   inlineData: {
@@ -512,6 +539,7 @@
         els.menuPopup.hidden = !els.menuPopup.hidden;
       });
       els.themeBtn.addEventListener("click", toggleTheme);
+      els.filterBtn.addEventListener("click", toggleFillerFilter);
       document.addEventListener("click", (event) => {
         if (els.menuPopup.hidden) return;
         if (
@@ -527,6 +555,7 @@
 
       updateRecordUI();
       applyTheme(theme);
+      applyFillerFilter(fillerFilter);
       copyHistory = loadCopyHistory();
       renderCopyHistory();
       if (!apiKey) {
