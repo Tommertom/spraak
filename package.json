@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Node.js test script for local Whisper transcription (mirrors app.js logic)",
   "private": true,
+  "engines": {
+    "node": ">=18.17.0"
+  },
   "scripts": {
     "transcribe": "node transcribe.mjs"
   },
