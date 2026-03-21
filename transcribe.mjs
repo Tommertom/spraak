@@ -26,7 +26,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 
 // Same model constant as app.js
-const LOCAL_LLM_MODEL = "Xenova/whisper-tiny";
+const LOCAL_LLM_MODEL = "onnx-community/whisper-large-v3-turbo";
 
 /**
  * Parse a WAV file buffer and return { data: Float32Array, sampleRate }.
@@ -41,7 +41,11 @@ const LOCAL_LLM_MODEL = "Xenova/whisper-tiny";
  *   - WAVE_FORMAT_EXTENSIBLE (audioFormat=0xFFFE): PCM or IEEE-float subformat
  */
 function wavToFloat32(buffer) {
-  const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  const view = new DataView(
+    buffer.buffer,
+    buffer.byteOffset,
+    buffer.byteLength,
+  );
 
   const str4 = (offset) =>
     String.fromCharCode(
@@ -51,8 +55,10 @@ function wavToFloat32(buffer) {
       buffer[offset + 3],
     );
 
-  if (str4(0) !== "RIFF") throw new Error("Not a valid WAV file (missing RIFF header)");
-  if (str4(8) !== "WAVE") throw new Error("Not a valid WAV file (missing WAVE identifier)");
+  if (str4(0) !== "RIFF")
+    throw new Error("Not a valid WAV file (missing RIFF header)");
+  if (str4(8) !== "WAVE")
+    throw new Error("Not a valid WAV file (missing WAVE identifier)");
 
   // Subformat GUIDs for WAVE_FORMAT_EXTENSIBLE (first 4 bytes, little-endian)
   const KSDATAFORMAT_SUBTYPE_PCM = 1;
@@ -69,7 +75,9 @@ function wavToFloat32(buffer) {
 
     // Guard against a corrupt chunkSize that would read past the buffer.
     if (offset + 8 + chunkSize > buffer.byteLength) {
-      throw new Error(`WAV chunk "${chunkId}" at offset ${offset} extends past end of file`);
+      throw new Error(
+        `WAV chunk "${chunkId}" at offset ${offset} extends past end of file`,
+      );
     }
 
     if (chunkId === "fmt ") {
@@ -88,7 +96,10 @@ function wavToFloat32(buffer) {
       if (audioFormat === 0xfffe && chunkSize >= 40) {
         audioFormat = view.getUint16(offset + 32, true);
         // Map the subformat codes back to the canonical format identifiers
-        if (audioFormat !== KSDATAFORMAT_SUBTYPE_PCM && audioFormat !== KSDATAFORMAT_SUBTYPE_IEEE_FLOAT) {
+        if (
+          audioFormat !== KSDATAFORMAT_SUBTYPE_PCM &&
+          audioFormat !== KSDATAFORMAT_SUBTYPE_IEEE_FLOAT
+        ) {
           throw new Error(
             `Unsupported WAVE_FORMAT_EXTENSIBLE subformat: 0x${audioFormat.toString(16).padStart(4, "0")}` +
               " (only PCM and IEEE float subtypes are supported)",
@@ -110,7 +121,8 @@ function wavToFloat32(buffer) {
   }
 
   if (sampleRate === undefined) throw new Error("Could not find WAV fmt chunk");
-  if (dataOffset === undefined) throw new Error("Could not find WAV data chunk");
+  if (dataOffset === undefined)
+    throw new Error("Could not find WAV data chunk");
 
   if (audioFormat !== 1 && audioFormat !== 3) {
     throw new Error(
@@ -160,7 +172,9 @@ function wavToFloat32(buffer) {
         // 8-bit WAV is unsigned (validated above to only reach 8/16/24/32)
         sum += (buffer[byteOffset] - 128) / 128;
       } else {
-        throw new Error(`Unexpected bit depth in decode loop: ${bitsPerSample}`);
+        throw new Error(
+          `Unexpected bit depth in decode loop: ${bitsPerSample}`,
+        );
       }
     }
     monoData[i] = numChannels > 1 ? sum / numChannels : sum;
@@ -178,20 +192,16 @@ async function loadLocalModel() {
   if (localPipeline) return localPipeline;
 
   console.log("Downloading local model (first-time only)…");
-  const pipe = await pipeline(
-    "automatic-speech-recognition",
-    LOCAL_LLM_MODEL,
-    {
-      progress_callback: (progress) => {
-        if (progress.status === "downloading") {
-          const pct = progress.progress ? Math.round(progress.progress) : 0;
-          process.stdout.write(`\rDownloading model: ${pct}%   `);
-        } else if (progress.status === "loading") {
-          process.stdout.write("\nLoading model into memory…\n");
-        }
-      },
+  const pipe = await pipeline("automatic-speech-recognition", LOCAL_LLM_MODEL, {
+    progress_callback: (progress) => {
+      if (progress.status === "downloading") {
+        const pct = progress.progress ? Math.round(progress.progress) : 0;
+        process.stdout.write(`\rDownloading model: ${pct}%   `);
+      } else if (progress.status === "loading") {
+        process.stdout.write("\nLoading model into memory…\n");
+      }
     },
-  );
+  });
 
   process.stdout.write("\n");
   console.log("Local model ready.");
@@ -216,7 +226,12 @@ async function transcribeLocally(audioPath) {
 
   let result;
   try {
-    result = await pipe(data, { sampling_rate: sampleRate });
+    result = await pipe(data, {
+      sampling_rate: sampleRate,
+      chunk_length_s: 30,
+      stride_length_s: 5,
+      language: "english",
+    });
   } catch (err) {
     throw new Error(
       "Local transcription failed: " +

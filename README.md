@@ -72,3 +72,11 @@ Because browsers require a secure context to access the microphone, Spraak **mus
 ## License
 
 This project does not currently include a license file. Please contact the repository owner for usage terms.
+
+
+## Links
+- https://huggingface.co/spaces/Xenova/realtime-whisper-webgpu
+- https://github.com/huggingface/transformers.js/tree/v3/examples/webgpu-whisper
+
+
+## this model worked - onnx-community/whisper-large-v3-turbo
