@@ -1,4 +1,4 @@
-      import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+      import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js';
 
       "use strict";
 
@@ -266,7 +266,7 @@
         const audioContext = new AudioContextCtor();
         try {
           const arrayBuffer = await blob.arrayBuffer();
-          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
           const sampleRate = audioBuffer.sampleRate;
           const inputChannelCount = audioBuffer.numberOfChannels;
           const frameCount = audioBuffer.length;
@@ -286,7 +286,8 @@
       async function loadLocalModel() {
         if (localPipeline) return localPipeline;
         localModelLoading = true;
-        els.recordBtn.disabled = true;
+        const wasDisabled = els.recordBtn.disabled;
+        if (!isRecording) els.recordBtn.disabled = true;
         try {
           setMessage("Downloading local model (first-time only)…", "info");
           const pipe = await pipeline(
@@ -310,7 +311,7 @@
           return localPipeline;
         } finally {
           localModelLoading = false;
-          if (!isRecording) els.recordBtn.disabled = false;
+          if (!isRecording && !wasDisabled) els.recordBtn.disabled = false;
         }
       }
 
@@ -552,6 +553,7 @@
           });
           mediaRecorder = new MediaRecorder(mediaStream);
           recordedChunks = [];
+          const useLocalLlm = localLlm;
 
           mediaRecorder.ondataavailable = (event) => {
             if (event.data && event.data.size > 0) {
@@ -584,7 +586,7 @@
             setMessage("Transcribing recording...", "info");
             try {
               const completeRecording = new Blob(chunks, { type: mimeType });
-              const transcriptText = localLlm
+              const transcriptText = useLocalLlm
                 ? await transcribeLocally(completeRecording)
                 : await transcribeChunk(completeRecording);
               if (transcriptText) {
