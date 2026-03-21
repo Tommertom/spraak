@@ -1,0 +1,12 @@
+{
+  "name": "spraak-transcribe",
+  "version": "1.0.0",
+  "description": "Node.js test script for local Whisper transcription (mirrors app.js logic)",
+  "private": true,
+  "scripts": {
+    "transcribe": "node transcribe.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1"
+  }
+}
