@@ -318,7 +318,14 @@
       async function transcribeLocally(audioBlob) {
         const pipe = await loadLocalModel();
         const { data, sampleRate } = await audioToFloat32(audioBlob);
-        const result = await pipe(data, { sampling_rate: sampleRate });
+        let result;
+        try {
+          result = await pipe(data, { sampling_rate: sampleRate });
+        } catch (err) {
+          throw new Error(
+            "Local transcription failed: " + (err?.message || err?.toString() || "Unknown error"),
+          );
+        }
         let text = (result.text || "").trim();
         if (fillerFilter) {
           text = text
@@ -561,8 +568,15 @@
             }
           };
 
-          mediaRecorder.onerror = () => {
-            setMessage("Microphone recorder error occurred.", "error");
+          mediaRecorder.onerror = (event) => {
+            const detail = event?.error?.message || "";
+            setMessage(
+              "Microphone recorder error occurred." + (detail ? " " + detail : ""),
+              "error",
+            );
+            isRecording = false;
+            updateRecordUI();
+            releaseWakeLock();
           };
 
           mediaRecorder.onstop = async () => {
@@ -765,4 +779,33 @@
         promptForApiKey();
       } else {
         setMessage("Ready. Click Start Recording.", "info");
+      }
+
+      window.addEventListener("unhandledrejection", (event) => {
+        console.error("Unhandled promise rejection:", event.reason);
+        const msg =
+          event.reason?.message ||
+          (typeof event.reason === "string" ? event.reason : null) ||
+          "An unexpected error occurred.";
+        setMessage("Error: " + msg, "error");
+        resetAfterError();
+        event.preventDefault();
+      });
+
+      window.addEventListener("error", (event) => {
+        console.error("Uncaught error:", event.error || event.message);
+        const msg =
+          event.error?.message || event.message || "An unexpected error occurred.";
+        setMessage("Error: " + msg, "error");
+        resetAfterError();
+        event.preventDefault();
+      });
+
+      function resetAfterError() {
+        if (isRecording) {
+          isRecording = false;
+          updateRecordUI();
+          releaseWakeLock();
+        }
+        els.recordBtn.disabled = false;
       }
