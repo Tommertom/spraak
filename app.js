@@ -362,11 +362,23 @@
       }
 
       async function requestWakeLock() {
-        if (!("wakeLock" in navigator)) return;
+        if (!("wakeLock" in navigator) || wakeLock) return;
         try {
-          wakeLock = await navigator.wakeLock.request("screen");
-          wakeLock.addEventListener("release", () => {
-            wakeLock = null;
+          const newWakeLock = await navigator.wakeLock.request("screen");
+          if (wakeLock) {
+            // A concurrent call acquired a lock while we were awaiting; release this one.
+            try {
+              await newWakeLock.release();
+            } catch (releaseErr) {
+              console.warn("Stale wake lock release failed:", releaseErr);
+            }
+            return;
+          }
+          wakeLock = newWakeLock;
+          newWakeLock.addEventListener("release", () => {
+            if (wakeLock === newWakeLock) {
+              wakeLock = null;
+            }
           });
         } catch (err) {
           console.warn("Wake lock request failed:", err);
@@ -453,7 +465,10 @@
           isRecording = true;
           updateRecordUI();
           setMessage("Recording...", "success");
-          requestWakeLock();
+          await requestWakeLock();
+          if (!isRecording) {
+            await releaseWakeLock();
+          }
         } catch (err) {
           console.error(err);
           setMessage(
@@ -579,9 +594,9 @@
       els.menuPopup.addEventListener("click", (event) =>
         event.stopPropagation(),
       );
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible" && isRecording) {
-          requestWakeLock();
+      document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible" && isRecording && !wakeLock) {
+          await requestWakeLock();
         }
       });
 
