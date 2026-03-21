@@ -34,6 +34,7 @@
       let copyHistory = [];
       let theme = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
       let fillerFilter = localStorage.getItem(FILLER_FILTER_STORAGE_KEY) === "true";
+      let wakeLock = null;
 
       function applyTheme(nextTheme) {
         theme = nextTheme === "light" ? "light" : "dark";
@@ -360,6 +361,29 @@
         return extractText(data);
       }
 
+      async function requestWakeLock() {
+        if (!("wakeLock" in navigator)) return;
+        try {
+          wakeLock = await navigator.wakeLock.request("screen");
+          wakeLock.addEventListener("release", () => {
+            wakeLock = null;
+          });
+        } catch (err) {
+          console.warn("Wake lock request failed:", err);
+        }
+      }
+
+      async function releaseWakeLock() {
+        if (wakeLock) {
+          try {
+            await wakeLock.release();
+          } catch (err) {
+            console.warn("Wake lock release failed:", err);
+          }
+          wakeLock = null;
+        }
+      }
+
       async function startRecording() {
         if (!ensureApiKey()) return;
 
@@ -429,6 +453,7 @@
           isRecording = true;
           updateRecordUI();
           setMessage("Recording...", "success");
+          requestWakeLock();
         } catch (err) {
           console.error(err);
           setMessage(
@@ -438,7 +463,7 @@
         }
       }
 
-      function stopRecording() {
+      async function stopRecording() {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
           mediaRecorder.stop();
         } else {
@@ -446,6 +471,7 @@
         }
         isRecording = false;
         updateRecordUI();
+        await releaseWakeLock();
       }
 
       async function copyTranscript(addToHistory = true) {
@@ -553,6 +579,11 @@
       els.menuPopup.addEventListener("click", (event) =>
         event.stopPropagation(),
       );
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && isRecording) {
+          requestWakeLock();
+        }
+      });
 
       updateRecordUI();
       applyTheme(theme);
