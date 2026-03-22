@@ -1,5 +1,5 @@
 
-("use strict");
+'use strict';
 
 const STORAGE_KEY = "geminiApiKey";
 const THEME_STORAGE_KEY = "themePreference";
