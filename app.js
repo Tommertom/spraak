@@ -1,34 +1,13 @@
-import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js";
 
-("use strict");
+'use strict';
 
 const STORAGE_KEY = "geminiApiKey";
 const THEME_STORAGE_KEY = "themePreference";
 const COPY_HISTORY_STORAGE_KEY = "copyHistory";
 const FILLER_FILTER_STORAGE_KEY = "fillerFilter";
-const LOCAL_LLM_STORAGE_KEY = "localLlm";
 const MAX_COPY_HISTORY_ITEMS = 50;
 const GEMINI_MODEL = "gemini-3-flash-preview";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-const LOCAL_LLM_MODEL = "onnx-community/whisper-tiny.en";
-
-// Xenova/whisper-tiny.en
-
-/*
-
-onnx-community/whisper-large-v3-turbo	~809M	Current — distilled large-v3, fast + accurate
-onnx-community/whisper-large-v3	~1.5B	Full large-v3, highest accuracy
-onnx-community/whisper-medium	~307M	Multilingual
-onnx-community/whisper-medium.en	~307M	English-only variant
-onnx-community/whisper-small	~244M	Multilingual
-onnx-community/whisper-small.en	~244M	English-only variant
-onnx-community/whisper-base	~74M	Multilingual
-onnx-community/whisper-base.en	~74M	English-only variant
-onnx-community/whisper-tiny	~39M	Multilingual
-onnx-community/whisper-tiny.en
-
-
-*/
 
 const els = {
   message: document.getElementById("message"),
@@ -42,7 +21,6 @@ const els = {
   menuBtn: document.getElementById("menuBtn"),
   themeBtn: document.getElementById("themeBtn"),
   filterBtn: document.getElementById("filterBtn"),
-  localLlmBtn: document.getElementById("localLlmBtn"),
   menuPopup: document.getElementById("menuPopup"),
   copyToast: document.getElementById("copyToast"),
   historyList: document.getElementById("historyList"),
@@ -57,9 +35,6 @@ let copyToastTimer = null;
 let copyHistory = [];
 let theme = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
 let fillerFilter = localStorage.getItem(FILLER_FILTER_STORAGE_KEY) === "true";
-let localLlm = localStorage.getItem(LOCAL_LLM_STORAGE_KEY) === "true";
-let localPipeline = null;
-let localModelLoading = false;
 let wakeLock = null;
 
 function applyTheme(nextTheme) {
@@ -100,50 +75,6 @@ function applyFillerFilter(enabled) {
 function toggleFillerFilter() {
   applyFillerFilter(!fillerFilter);
   localStorage.setItem(FILLER_FILTER_STORAGE_KEY, fillerFilter);
-}
-
-function applyLocalLlm(enabled) {
-  localLlm = !!enabled;
-  if (localLlm) {
-    els.localLlmBtn.classList.remove("btn-secondary");
-  } else {
-    els.localLlmBtn.classList.add("btn-secondary");
-  }
-  els.localLlmBtn.setAttribute(
-    "aria-label",
-    localLlm ? "Disable local transcription" : "Enable local transcription",
-  );
-  els.localLlmBtn.title = localLlm
-    ? "Disable local transcription"
-    : "Enable local transcription";
-}
-
-async function toggleLocalLlm() {
-  const newState = !localLlm;
-  applyLocalLlm(newState);
-  localStorage.setItem(LOCAL_LLM_STORAGE_KEY, localLlm);
-  if (localLlm && !localPipeline && !localModelLoading) {
-    try {
-      await loadLocalModel();
-    } catch (err) {
-      console.error(err);
-      setMessage(
-        "Failed to load local model: " + (err.message || "Unknown error"),
-        "error",
-      );
-      applyLocalLlm(false);
-      localStorage.setItem(LOCAL_LLM_STORAGE_KEY, false);
-    }
-  } else if (!localLlm) {
-    if (apiKey) {
-      setMessage("Ready. Click Start Recording.", "info");
-    } else {
-      setMessage(
-        "Please set your Gemini API key to start transcribing.",
-        "warning",
-      );
-    }
-  }
 }
 
 function setMessage(text, type = "info") {
@@ -266,96 +197,6 @@ async function blobToBase64(blob) {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
-}
-
-async function audioToFloat32(blob) {
-  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextCtor) {
-    throw new Error("Browser audio conversion is not supported.");
-  }
-  const audioContext = new AudioContextCtor();
-  try {
-    const arrayBuffer = await blob.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(
-      arrayBuffer.slice(0),
-    );
-    const sampleRate = audioBuffer.sampleRate;
-    const inputChannelCount = audioBuffer.numberOfChannels;
-    const frameCount = audioBuffer.length;
-    const monoData = new Float32Array(frameCount);
-    for (let ch = 0; ch < inputChannelCount; ch += 1) {
-      const channelData = audioBuffer.getChannelData(ch);
-      for (let i = 0; i < frameCount; i += 1) {
-        monoData[i] += channelData[i] / inputChannelCount;
-      }
-    }
-    return { data: monoData, sampleRate };
-  } finally {
-    await audioContext.close();
-  }
-}
-
-async function loadLocalModel() {
-  if (localPipeline) return localPipeline;
-  localModelLoading = true;
-  const wasDisabled = els.recordBtn.disabled;
-  if (!isRecording) els.recordBtn.disabled = true;
-  try {
-    setMessage("Downloading local model (first-time only)…", "info");
-    const deviceType = (await navigator.gpu?.requestAdapter())
-      ? "webgpu"
-      : "wasm";
-    const pipe = await pipeline(
-      "automatic-speech-recognition",
-      LOCAL_LLM_MODEL,
-      {
-        device: deviceType,
-        dtype: deviceType === "webgpu" ? "fp16" : "q4",
-        progress_callback: (progress) => {
-          if (progress.status === "downloading") {
-            const pct = progress.progress ? Math.round(progress.progress) : 0;
-            setMessage(`Downloading model: ${pct}%`, "info");
-          } else if (progress.status === "loading") {
-            setMessage("Loading model into memory…", "info");
-          }
-        },
-      },
-    );
-    setMessage(`Local model loaded (${deviceType}).`, "info");
-    localPipeline = pipe;
-    setMessage("Local model ready. Click Start Recording.", "success");
-    return localPipeline;
-  } finally {
-    localModelLoading = false;
-    if (!isRecording && !wasDisabled) els.recordBtn.disabled = false;
-  }
-}
-
-async function transcribeLocally(audioBlob) {
-  const pipe = await loadLocalModel();
-  const { data, sampleRate } = await audioToFloat32(audioBlob);
-  let result;
-  try {
-    result = await pipe(data, {
-      sampling_rate: sampleRate,
-      chunk_length_s: 30,
-      stride_length_s: 5,
-      language: "english",
-    });
-  } catch (err) {
-    throw new Error(
-      "Local transcription failed: " +
-        (err?.message || err?.toString() || "Unknown error"),
-    );
-  }
-  let text = (result.text || "").trim();
-  if (fillerFilter) {
-    text = text
-      .replace(/\b(um|uh|ah|hmm|er|erm|uhm)\b[,.]?\s*/gi, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-  return text;
 }
 
 function extractText(data) {
@@ -544,23 +385,7 @@ async function releaseWakeLock() {
 }
 
 async function startRecording() {
-  if (!localLlm && !ensureApiKey()) return;
-  if (localLlm && localModelLoading) {
-    setMessage("Model is still loading, please wait…", "warning");
-    return;
-  }
-  if (localLlm && !localPipeline) {
-    try {
-      await loadLocalModel();
-    } catch (err) {
-      console.error(err);
-      setMessage(
-        "Failed to load local model: " + (err.message || "Unknown error"),
-        "error",
-      );
-      return;
-    }
-  }
+  if (!ensureApiKey()) return;
 
   if (
     !navigator.mediaDevices?.getUserMedia ||
@@ -576,7 +401,6 @@ async function startRecording() {
     });
     mediaRecorder = new MediaRecorder(mediaStream);
     recordedChunks = [];
-    const useLocalLlm = localLlm;
 
     mediaRecorder.ondataavailable = (event) => {
       if (event.data && event.data.size > 0) {
@@ -613,9 +437,7 @@ async function startRecording() {
       setMessage("Transcribing recording...", "info");
       try {
         const completeRecording = new Blob(chunks, { type: mimeType });
-        const transcriptText = useLocalLlm
-          ? await transcribeLocally(completeRecording)
-          : await transcribeChunk(completeRecording);
+        const transcriptText = await transcribeChunk(completeRecording);
         if (transcriptText) {
           appendTranscript(transcriptText);
           setMessage("Transcription completed.", "success");
@@ -754,7 +576,6 @@ els.menuBtn.addEventListener("click", (event) => {
 });
 els.themeBtn.addEventListener("click", toggleTheme);
 els.filterBtn.addEventListener("click", toggleFillerFilter);
-els.localLlmBtn.addEventListener("click", toggleLocalLlm);
 document.addEventListener("click", (event) => {
   if (els.menuPopup.hidden) return;
   if (!els.menuPopup.contains(event.target) && event.target !== els.menuBtn) {
@@ -771,20 +592,9 @@ document.addEventListener("visibilitychange", async () => {
 updateRecordUI();
 applyTheme(theme);
 applyFillerFilter(fillerFilter);
-applyLocalLlm(localLlm);
 copyHistory = loadCopyHistory();
 renderCopyHistory();
-if (localLlm) {
-  loadLocalModel().catch((err) => {
-    console.error(err);
-    setMessage(
-      "Failed to load local model: " + (err.message || "Unknown error"),
-      "error",
-    );
-    applyLocalLlm(false);
-    localStorage.setItem(LOCAL_LLM_STORAGE_KEY, false);
-  });
-} else if (!apiKey) {
+if (!apiKey) {
   setMessage(
     "Please set your Gemini API key to start transcribing.",
     "warning",
